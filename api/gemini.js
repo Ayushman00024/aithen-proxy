@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-  // --- CORS for Flutter web ---
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -7,7 +6,6 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
 
   try {
-    // --- Read body safely ---
     let body = "";
     await new Promise((resolve) => {
       req.on("data", (chunk) => (body += chunk));
@@ -18,20 +16,27 @@ export default async function handler(req, res) {
     const userMessage = data.message || "Hello Gemini";
 
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey)
-      return res.status(500).json({ error: "Missing GEMINI_API_KEY" });
+    const projectId = process.env.GCP_PROJECT_ID; // add this in Vercel envs
 
-    // --- Use verified endpoint (v1beta, gemini-1.5-flash) ---
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: userMessage }] }],
-        }),
-      }
-    );
+    if (!apiKey || !projectId) {
+      return res
+        .status(500)
+        .json({ error: "Missing GEMINI_API_KEY or GCP_PROJECT_ID" });
+    }
+
+    // --- Vertex AI endpoint ---
+    const endpoint = `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/gemini-1.5-flash:generateContent`;
+
+    const geminiResponse = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: userMessage }] }],
+      }),
+    });
 
     if (!geminiResponse.ok) {
       const text = await geminiResponse.text();
