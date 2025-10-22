@@ -21,9 +21,9 @@ export default async function handler(req, res) {
     if (!apiKey)
       return res.status(500).json({ error: "Missing GEMINI_API_KEY" });
 
-    // --- Use current working endpoint (v1beta, flash-001) ---
+    // --- Use verified endpoint (v1beta, gemini-1.5-flash) ---
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-001:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
