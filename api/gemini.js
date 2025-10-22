@@ -27,9 +27,9 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Missing GEMINI_API_KEY" });
     }
 
-    // --- Call the latest Gemini API ---
+    // --- Call the updated Gemini API (v1beta, 1.5-flash) ---
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -50,7 +50,7 @@ export default async function handler(req, res) {
 
     const result = await geminiResponse.json();
 
-    // --- Extract text reply safely ---
+    // --- Extract reply safely ---
     const reply =
       result?.candidates?.[0]?.content?.parts?.[0]?.text ||
       "⚠️ No response from Gemini";
