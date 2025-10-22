@@ -1,13 +1,10 @@
 export default async function handler(req, res) {
-  // --- Allow CORS for Flutter web requests ---
+  // --- CORS for Flutter web ---
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  // Handle preflight (OPTIONS) requests
-  if (req.method === "OPTIONS") {
-    return res.status(204).end();
-  }
+  if (req.method === "OPTIONS") return res.status(204).end();
 
   try {
     // --- Read body safely ---
@@ -20,16 +17,13 @@ export default async function handler(req, res) {
     const data = JSON.parse(body || "{}");
     const userMessage = data.message || "Hello Gemini";
 
-    // --- Validate API key ---
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      console.error("Missing GEMINI_API_KEY in environment");
+    if (!apiKey)
       return res.status(500).json({ error: "Missing GEMINI_API_KEY" });
-    }
 
-    // --- Use latest stable endpoint and model ---
+    // --- Use current working endpoint (v1beta, flash-001) ---
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-001:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-001:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -39,7 +33,6 @@ export default async function handler(req, res) {
       }
     );
 
-    // --- Handle Gemini response ---
     if (!geminiResponse.ok) {
       const text = await geminiResponse.text();
       console.error("Gemini API error:", text);
@@ -49,13 +42,10 @@ export default async function handler(req, res) {
     }
 
     const result = await geminiResponse.json();
-
-    // --- Extract reply safely ---
     const reply =
       result?.candidates?.[0]?.content?.parts?.[0]?.text ||
       "⚠️ No response from Gemini";
 
-    // --- Send response to Flutter ---
     return res.status(200).json({ reply });
   } catch (err) {
     console.error("Proxy error:", err);
