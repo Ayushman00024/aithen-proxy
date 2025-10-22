@@ -4,13 +4,13 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  // Handle preflight request
+  // Handle preflight (OPTIONS) requests
   if (req.method === "OPTIONS") {
     return res.status(204).end();
   }
 
   try {
-    // --- Read body safely ---
+    // --- Read body safely (for Node environments without body parser) ---
     let body = "";
     await new Promise((resolve) => {
       req.on("data", (chunk) => (body += chunk));
@@ -27,9 +27,9 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Missing GEMINI_API_KEY" });
     }
 
-    // --- Send request to Gemini API ---
+    // --- Call the latest Gemini API ---
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -39,7 +39,7 @@ export default async function handler(req, res) {
       }
     );
 
-    // --- Handle Gemini reply ---
+    // --- Handle Gemini response ---
     if (!geminiResponse.ok) {
       const text = await geminiResponse.text();
       console.error("Gemini API error:", text);
@@ -49,9 +49,18 @@ export default async function handler(req, res) {
     }
 
     const result = await geminiResponse.json();
-    return res.status(200).json(result);
+
+    // --- Extract text reply safely ---
+    const reply =
+      result?.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "⚠️ No response from Gemini";
+
+    // --- Send response to Flutter ---
+    return res.status(200).json({ reply });
   } catch (err) {
     console.error("Proxy error:", err);
-    return res.status(500).json({ error: err.message || "Internal Server Error" });
+    return res
+      .status(500)
+      .json({ error: "Internal Server Error", details: err.message });
   }
 }
