@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // --- Read body safely (for Node environments without body parser) ---
+    // --- Read body safely ---
     let body = "";
     await new Promise((resolve) => {
       req.on("data", (chunk) => (body += chunk));
@@ -27,9 +27,9 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Missing GEMINI_API_KEY" });
     }
 
-    // --- Call the updated Gemini API (v1beta, 1.5-flash) ---
+    // --- Use latest stable endpoint and model ---
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-001:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -64,3 +64,4 @@ export default async function handler(req, res) {
       .json({ error: "Internal Server Error", details: err.message });
   }
 }
+
